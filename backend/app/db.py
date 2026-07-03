@@ -7,12 +7,18 @@ rest of the platform's graceful-degradation design.
 """
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from .config import settings
 from .schemas import Alert, EventRecord
 
 _pool: Any = None
+
+
+def _mask(dsn: str) -> str:
+    """Hide the password when logging a connection string."""
+    return re.sub(r"//([^:/@]+):[^@]+@", r"//\1:***@", dsn)
 
 _CREATE = """
 CREATE TABLE IF NOT EXISTS events (
@@ -36,10 +42,12 @@ async def init() -> None:
     """Create the connection pool and ensure the schema exists."""
     global _pool
     if not settings.database_url:
+        print("[db] DATABASE_URL not set — event log disabled (in-memory only)", flush=True)
         return
     try:
         import asyncpg
 
+        print(f"[db] connecting to {_mask(settings.database_url)} …", flush=True)
         # statement_cache_size=0 keeps us compatible with transaction-mode
         # poolers (e.g. Supabase / PgBouncer), which don't support prepared
         # statement caching.
@@ -48,8 +56,10 @@ async def init() -> None:
         )
         async with _pool.acquire() as con:
             await con.execute(_CREATE)
-    except Exception:
+        print("[db] connected — event log ready ✓", flush=True)
+    except Exception as e:
         _pool = None  # DB unavailable → degrade to in-memory only
+        print(f"[db] connection FAILED — {type(e).__name__}: {e}", flush=True)
 
 
 async def close() -> None:
