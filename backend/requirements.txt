@@ -1,0 +1,25 @@
+# ── Core API ─────────────────────────────────────────────
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.5
+pydantic-settings==2.7.1
+
+# ── Auth ─────────────────────────────────────────────────
+python-jose[cryptography]==3.3.0
+bcrypt==4.2.1
+python-multipart==0.0.20
+
+# ── Data stores (optional — event log + cache) ───────────
+asyncpg==0.30.0
+redis==5.2.1
+
+# ── AI (Claude) ──────────────────────────────────────────
+anthropic>=0.45.0
+
+# ── Optional live scanning (graceful fallback to simulation) ──
+# Nmap requires the `nmap` binary installed on the host.
+# Scapy packet sniffing requires admin/root privileges (+ Npcap on Windows).
+# Both are imported lazily; the app runs fully without them.
+python-nmap==0.7.1
+scapy==2.6.1
+httpx==0.28.1

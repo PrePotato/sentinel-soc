@@ -1,0 +1,79 @@
+# SENTINEL SOC — full stack: frontend, backend, PostgreSQL, Redis.
+# Configure via a .env file in this directory (see .env.example), then:
+#   docker compose up --build
+# Dashboard → http://localhost:${FRONTEND_PORT:-8080}   API → http://localhost:8000/docs
+name: sentinel-soc
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-soc}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-soc_password}
+      POSTGRES_DB: ${POSTGRES_DB:-sentinel}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-soc} -d ${POSTGRES_DB:-sentinel}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    environment:
+      # Data stores (service DNS names on the compose network)
+      DATABASE_URL: postgresql://${POSTGRES_USER:-soc}:${POSTGRES_PASSWORD:-soc_password}@postgres:5432/${POSTGRES_DB:-sentinel}
+      REDIS_URL: redis://redis:6379/0
+      # Auth
+      SOC_JWT_SECRET: ${SOC_JWT_SECRET:-change-me-in-production-please-32chars-min}
+      SOC_JWT_EXPIRE_MINUTES: ${SOC_JWT_EXPIRE_MINUTES:-720}
+      SOC_CORS_ORIGINS: ${SOC_CORS_ORIGINS:-http://localhost:8080,http://127.0.0.1:8080}
+      # AI (Claude)
+      SOC_AI_MODEL: ${SOC_AI_MODEL:-claude-haiku-4-5}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      # Live NVD feed
+      SOC_NVD_ENABLED: ${SOC_NVD_ENABLED:-1}
+      SOC_NVD_API_KEY: ${SOC_NVD_API_KEY:-}
+      # Optional real scanning (needs privileges/tools; off by default)
+      SOC_SCAN_ENABLED: ${SOC_SCAN_ENABLED:-0}
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=3).status==200 else 1)\""]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  redisdata:
