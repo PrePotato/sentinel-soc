@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useSocStore } from '../store/useSocStore'
+import { API_BASE } from '../lib/api'
 import { beep } from '../lib/sound'
 import {
   makeSnapshot,
@@ -73,8 +74,11 @@ export function useLiveFeed() {
     // ── Backend WebSocket ──────────────────────────────────────
     const connect = () => {
       try {
-        const proto = location.protocol === 'https:' ? 'wss' : 'ws'
-        socket = new WebSocket(`${proto}://${location.host}/ws/live`)
+        // Same-origin in dev/Docker; explicit backend origin (https→wss) in prod.
+        const wsBase = API_BASE
+          ? API_BASE.replace(/^http/, 'ws')
+          : `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}`
+        socket = new WebSocket(`${wsBase}/ws/live`)
       } catch {
         startSim()
         return

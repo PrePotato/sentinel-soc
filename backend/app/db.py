@@ -40,7 +40,12 @@ async def init() -> None:
     try:
         import asyncpg
 
-        _pool = await asyncpg.create_pool(settings.database_url, min_size=1, max_size=5, command_timeout=10)
+        # statement_cache_size=0 keeps us compatible with transaction-mode
+        # poolers (e.g. Supabase / PgBouncer), which don't support prepared
+        # statement caching.
+        _pool = await asyncpg.create_pool(
+            settings.database_url, min_size=1, max_size=5, command_timeout=10, statement_cache_size=0
+        )
         async with _pool.acquire() as con:
             await con.execute(_CREATE)
     except Exception:

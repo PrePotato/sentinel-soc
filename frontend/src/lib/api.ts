@@ -1,8 +1,13 @@
 import axios from 'axios'
 
-// Axios instance pointed at the FastAPI backend (proxied by Vite in dev).
+// Backend base URL. In dev / Docker it's empty → requests go to `/api`
+// (Vite proxy / nginx, same origin). In a decoupled prod deploy set
+// VITE_API_URL to the backend origin (e.g. https://sentinel-soc-api.onrender.com).
+export const API_BASE = (import.meta.env.VITE_API_URL ?? '').replace(/\/+$/, '')
+
+// Axios instance pointed at the FastAPI backend.
 // A stored JWT is attached automatically; 401s bubble up to the auth store.
-export const api = axios.create({ baseURL: '/api', timeout: 12_000 })
+export const api = axios.create({ baseURL: `${API_BASE}/api`, timeout: 12_000 })
 
 const TOKEN_KEY = 'soc.jwt'
 

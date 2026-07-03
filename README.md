@@ -291,6 +291,23 @@ All configuration is env-driven (`.env`). Key variables:
 
 ---
 
+## Deploy
+
+Production is a **decoupled** stack — **Vercel** (frontend) + **Render** (backend)
++ **Supabase** (Postgres) — running **simulated telemetry only** (real Nmap/Scapy
+scans stay local). Blueprints live in [`render.yaml`](render.yaml) and
+[`frontend/vercel.json`](frontend/vercel.json).
+
+[![Deploy to Render](https://img.shields.io/badge/Deploy-Render-46E3B7?logo=render&logoColor=white)](https://render.com/deploy?repo=https://github.com/PrePotato/sentinel-soc)
+&nbsp;
+[![Deploy with Vercel](https://img.shields.io/badge/Deploy-Vercel-000000?logo=vercel&logoColor=white)](https://vercel.com/new/clone?repository-url=https://github.com/PrePotato/sentinel-soc&root-directory=frontend&env=VITE_API_URL&envDescription=Backend%20origin%20(your%20Render%20URL))
+
+**Order:** deploy the backend on Render first (copy its URL) → deploy the frontend
+on Vercel with `VITE_API_URL` set to that URL. Full walkthrough — including the
+Supabase database — is in **[DEPLOY.md](DEPLOY.md)**.
+
+---
+
 ## Demo credentials
 
 | Username | Password | Role | Access |

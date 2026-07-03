@@ -17,8 +17,9 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 720
 
-    # CORS — the Vite dev origin(s)
+    # CORS — allowed browser origins (comma-separated) + optional regex.
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
+    cors_origin_regex: str | None = None  # e.g. https://.*\.vercel\.app for preview + prod
 
     # AI — fast, cheap summarization model (Haiku 4.5). Override with SOC_AI_MODEL.
     ai_model: str = "claude-haiku-4-5"
